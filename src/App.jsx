@@ -162,7 +162,7 @@ export default function OpenClaw() {
   const taRef     = useRef(null);
 
   useEffect(() => {
-    try { const s = sessionStorage.getItem("oc3"); if (s) setConfig(JSON.parse(s)); } catch {}
+    try { const s = localStorage.getItem("oc3"); if (s) setConfig(JSON.parse(s)); } catch {}
   }, []);
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function OpenClaw() {
 
   const saveConfig = c => {
     setConfig(c);
-    try { sessionStorage.setItem("oc3", JSON.stringify(c)); } catch {}
+    try { localStorage.setItem("oc3", JSON.stringify(c)); } catch {}
     setShowConfig(false);
   };
 
