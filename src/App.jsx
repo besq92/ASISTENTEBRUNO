@@ -1,110 +1,47 @@
 import { useState, useRef, useEffect } from "react";
 
-/* ─── FONTS ─────────────────────────────────────────────────────────────── */
 const FontLoader = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:        #0C0C14;
-      --surface:   #13131F;
-      --border:    #1F1F30;
-      --border2:   #2A2A3E;
-      --text:      #E2E2F0;
-      --muted:     #6B6B90;
-      --faint:     #2A2A40;
-      --amber:     #F5A623;
-      --amber-dim: #3A2A0A;
+      --bg: #0C0C14; --surface: #13131F; --border: #1F1F30; --border2: #2A2A3E;
+      --text: #E2E2F0; --muted: #6B6B90; --faint: #2A2A40;
+      --amber: #F5A623; --amber-dim: #3A2A0A;
     }
-
     body { background: var(--bg); }
-
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: .25; transform: scale(.8); }
-      50%       { opacity: 1;   transform: scale(1); }
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .agent-btn {
-      width: 100%; background: none; border: none;
-      border-left: 2px solid transparent;
-      padding: 12px 16px;
-      cursor: pointer;
-      transition: background .15s, border-color .15s;
-      text-align: left;
-    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .agent-btn { width: 100%; background: none; border: none; border-left: 2px solid transparent; padding: 12px 16px; cursor: pointer; transition: background .15s, border-color .15s; text-align: left; }
     .agent-btn:hover { background: rgba(255,255,255,.03); }
     .agent-btn.active { border-left-color: var(--accent-color); background: rgba(255,255,255,.05); }
-
-    .send-btn {
-      width: 40px; height: 40px; border-radius: 10px; border: none;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 700; flex-shrink: 0;
-      transition: background .15s, transform .1s, opacity .15s;
-    }
+    .send-btn { width: 40px; height: 40px; border-radius: 10px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; transition: background .15s, transform .1s, opacity .15s; }
     .send-btn:not(:disabled):hover { transform: scale(1.06); }
     .send-btn:not(:disabled):active { transform: scale(.96); }
-
-    .bubble {
-      max-width: 76%;
-      animation: fadeUp .25s ease both;
-      line-height: 1.75;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .config-input {
-      width: 100%; background: var(--bg);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 10px 12px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
-      outline: none;
-      transition: border-color .15s;
-    }
+    .bubble { max-width: 76%; animation: fadeUp .25s ease both; line-height: 1.75; font-size: 14px; font-family: 'DM Sans', sans-serif; }
+    .config-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s; }
     .config-input:focus { border-color: var(--amber); }
-
-    .tag {
-      display: inline-flex; align-items: center; gap: 5px;
-      border-radius: 6px; padding: 3px 10px;
-      font-size: 10px; font-family: 'Syne', sans-serif;
-      font-weight: 600; letter-spacing: .06em;
-    }
-
+    .tag { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 3px 10px; font-size: 10px; font-family: 'Syne', sans-serif; font-weight: 600; letter-spacing: .06em; }
     textarea:focus { outline: none; }
     textarea { resize: none; }
   `}</style>
 );
 
-const OLIVIA_SHEET_ID  = "1Sn1uvZEO6vdgRk79Y0i8th8NQKRddepL1tcVQtBopLY";
-const STRATY_SHEET_ID  = "1K8DwyXxY8JkYTPurwGCuiQgLhUDxY1jat4u0mszg-hc";
-const CRM_BASE         = "https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/crm-api";
-const SHEETS_BASE      = "https://sheets.googleapis.com/v4/spreadsheets";
+const OLIVIA_SHEET_ID = "1Sn1uvZEO6vdgRk79Y0i8th8NQKRddepL1tcVQtBopLY";
+const STRATY_SHEET_ID = "1K8DwyXxY8JkYTPurwGCuiQgLhUDxY1jat4u0mszg-hc";
+const CRM_BASE        = "https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/crm-api";
+const SHEETS_BASE     = "https://sheets.googleapis.com/v4/spreadsheets";
 
 const AGENTS = [
   {
-    id: "tere", name: "Tere", emoji: "👩‍💼",
-    color: "#5BADDF", bg: "#0D1E2E",
-    role: "Secretaria Ejecutiva",
-    badge: "Gmail · Calendar",
+    id: "tere", name: "Tere", emoji: "👩‍💼", color: "#5BADDF", bg: "#0D1E2E",
+    role: "Secretaria Ejecutiva", badge: "Gmail · Calendar",
     intro: "Hola, soy Tere. Puedo revisar tu agenda, enviar correos y organizar tu día.",
-    system: `Eres Tere, la secretaria ejecutiva personal. Tienes acceso a Gmail y Google Calendar de tu jefe.
-Puedes: agendar reuniones, revisar eventos, buscar y redactar correos.
-Eres organizada, proactiva y discreta. Confirmas antes de ejecutar acciones irreversibles. Respondes en español.`,
+    system: `Eres Tere, la secretaria ejecutiva personal. Tienes acceso a Gmail y Google Calendar de tu jefe.\nPuedes: agendar reuniones, revisar eventos, buscar y redactar correos.\nEres organizada, proactiva y discreta. Confirmas antes de ejecutar acciones irreversibles. Respondes en español.`,
     mcpServers: [
       { type: "url", url: "https://gmail.mcp.claude.com/mcp", name: "gmail" },
       { type: "url", url: "https://gcal.mcp.claude.com/mcp", name: "gcal" },
@@ -112,51 +49,32 @@ Eres organizada, proactiva y discreta. Confirmas antes de ejecutar acciones irre
     tools: null,
   },
   {
-    id: "debby", name: "Debby", emoji: "⌨️",
-    color: "#3DD6C8", bg: "#091E1C",
-    role: "Senior Developer",
-    badge: "Código · GitHub",
+    id: "debby", name: "Debby", emoji: "⌨️", color: "#3DD6C8", bg: "#091E1C",
+    role: "Senior Developer", badge: "Código · GitHub",
     intro: "Soy Debby. Código, arquitectura, debugging — dime qué necesitas.",
-    system: `Eres Debby, senior engineer full-stack. Dominas React, Node, Python, SQL, APIs REST y cloud.
-Código limpio, bien documentado. Explicas decisiones técnicas, señalas problemas y das opciones en trade-offs.
-Directa y pragmática. Respondes en español.`,
+    system: `Eres Debby, senior engineer full-stack. Dominas React, Node, Python, SQL, APIs REST y cloud.\nCódigo limpio, bien documentado. Explicas decisiones técnicas, señalas problemas y das opciones en trade-offs.\nDirecta y pragmática. Respondes en español.`,
     mcpServers: null, tools: null,
   },
   {
-    id: "nexxus", name: "NEXXUS", emoji: "📋",
-    color: "#F5A623", bg: "#1E1506",
-    role: "CRM de Ventas",
-    badge: "CRM · Calendar",
+    id: "nexxus", name: "NEXXUS", emoji: "📋", color: "#F5A623", bg: "#1E1506",
+    role: "CRM de Ventas", badge: "CRM · Calendar",
     intro: "Listo para gestionar tu pipeline. ¿Qué necesitas revisar o actualizar hoy?",
-    system: `Eres NEXXUS, agente CRM de ventas. Tienes acceso al CRM y a Google Calendar.
-Gestionas prospectos, proyectos, destajos, actividades, avances y seguimientos.
-Usa las herramientas para datos reales — no inventes. Confirma antes de crear o modificar registros.
-Preciso, comercial, orientado a resultados. Respondes en español.`,
+    system: `Eres NEXXUS, agente CRM de ventas. Tienes acceso al CRM y a Google Calendar.\nGestionas prospectos, proyectos, destajos, actividades, avances y seguimientos.\nUsa las herramientas para datos reales — no inventes. Confirma antes de crear o modificar registros.\nPreciso, comercial, orientado a resultados. Respondes en español.`,
     mcpServers: [{ type: "url", url: "https://gcal.mcp.claude.com/mcp", name: "gcal" }],
     tools: "crm",
   },
   {
-    id: "olivia", name: "Olivia", emoji: "🐱",
-    color: "#E8C49A", bg: "#1C1510",
-    role: "Gastos del Hogar",
-    badge: "B&M · Sheets",
+    id: "olivia", name: "Olivia", emoji: "🐱", color: "#E8C49A", bg: "#1C1510",
+    role: "Gastos del Hogar", badge: "B&M · Sheets",
     intro: "Miau 🐾 Soy Olivia. Cuido la bitácora del hogar. ¿Qué quieres consultar o registrar?",
-    system: `Eres Olivia, una gata blanca elegante que administra las finanzas del hogar 🐱.
-Tienes acceso a la bitácora B&M en Google Sheets. Consultas registros, analizas por categoría y registras pagos.
-Muéstrate organizada y clara. Usa un emoji de gato ocasionalmente 🐾.
-Confirma antes de registrar. Si falta configuración, avisa con gracia. Respondes en español.`,
+    system: `Eres Olivia, una gata blanca elegante que administra las finanzas del hogar 🐱.\nTienes acceso a la bitácora B&M en Google Sheets. Consultas registros, analizas por categoría y registras pagos.\nMuéstrate organizada y clara. Usa un emoji de gato ocasionalmente 🐾.\nConfirma antes de registrar. Si falta configuración, avisa con gracia. Respondes en español.`,
     mcpServers: null, tools: "sheets_olivia",
   },
   {
-    id: "straty", name: "STRATY", emoji: "💼",
-    color: "#5EE87A", bg: "#0B1A0D",
-    role: "Gastos del Negocio",
-    badge: "Finanzas · Sheets",
+    id: "straty", name: "STRATY", emoji: "💼", color: "#5EE87A", bg: "#0B1A0D",
+    role: "Gastos del Negocio", badge: "Finanzas · Sheets",
     intro: "STRATY online. Listo para analizar y registrar gastos del negocio.",
-    system: `Eres STRATY, agente de control financiero del negocio.
-Tienes acceso a la bitácora empresarial en Google Sheets. Consultas, analizas por categoría/proveedor y registras movimientos.
-Analítico, preciso, orientado a insights accionables. Confirma antes de registrar.
-Si falta Sheet ID o API key, avisa claramente. Respondes en español.`,
+    system: `Eres STRATY, agente de control financiero del negocio.\nTienes acceso a la bitácora empresarial en Google Sheets. Consultas, analizas por categoría/proveedor y registras movimientos.\nAnalítico, preciso, orientado a insights accionables. Confirma antes de registrar.\nSi falta Sheet ID o API key, avisa claramente. Respondes en español.`,
     mcpServers: null, tools: "sheets_straty",
   },
 ];
@@ -169,6 +87,7 @@ const CRM_TOOLS = [
   { name: "list_seguimientos",  description: "Lista seguimientos",             input_schema: { type: "object", properties: { tipo: { type: "string" } } } },
   { name: "create_seguimiento", description: "Crea un seguimiento",            input_schema: { type: "object", properties: { prospecto_id: { type: "string" }, tipo: { type: "string" }, descripcion: { type: "string" }, fecha: { type: "string" } }, required: ["descripcion"] } },
 ];
+
 const SHEETS_TOOLS = [
   { name: "read_sheet",     description: "Lee registros de la bitácora",    input_schema: { type: "object", properties: {} } },
   { name: "append_payment", description: "Registra un pago en la bitácora", input_schema: { type: "object", properties: { fecha: { type: "string" }, quien: { type: "string" }, tipo: { type: "string", enum: ["Gasto","Ingreso","Ahorro LP","Ahorro CP"] }, categoria: { type: "string" }, monto: { type: "number" }, comentarios: { type: "string" } }, required: ["fecha","tipo","categoria","monto"] } },
@@ -206,8 +125,9 @@ function ConfigModal({ config, onSave, onClose }) {
           Solo se guardan en tu sesión — nunca salen de tu navegador.
         </p>
         {[
-          { label:"API Key · NEXXUS CRM",                      key:"nexusKey",  ph:"Tu CRM_API_KEY de Supabase", type:"password" },
-          { label:"API Key · Google Sheets (Olivia & STRATY)",  key:"sheetsKey", ph:"AIza...",                    type:"password" },
+          { label:"API Key · Anthropic (Claude)",              key:"anthropicKey", ph:"sk-ant-...",                  type:"password" },
+          { label:"API Key · NEXXUS CRM",                      key:"nexusKey",     ph:"Tu CRM_API_KEY de Supabase",  type:"password" },
+          { label:"API Key · Google Sheets (Olivia & STRATY)", key:"sheetsKey",    ph:"AIza...",                     type:"password" },
         ].map(({ label, key, ph, type }) => (
           <div key={key} style={{ marginBottom:16 }}>
             <label style={{ display:"block", fontFamily:"'Syne',sans-serif", fontSize:10,
@@ -231,7 +151,7 @@ function ConfigModal({ config, onSave, onClose }) {
 }
 
 export default function OpenClaw() {
-  const [config,     setConfig]    = useState({ nexusKey:"", sheetsKey:"" });
+  const [config,     setConfig]    = useState({ anthropicKey:"", nexusKey:"", sheetsKey:"" });
   const [showConfig, setShowConfig]= useState(false);
   const [active,     setActive]    = useState(null);
   const [histories,  setHistories] = useState({});
@@ -239,6 +159,7 @@ export default function OpenClaw() {
   const [loading,    setLoading]   = useState(false);
   const [status,     setStatus]    = useState("");
   const bottomRef = useRef(null);
+  const taRef     = useRef(null);
 
   useEffect(() => {
     try { const s = sessionStorage.getItem("oc3"); if (s) setConfig(JSON.parse(s)); } catch {}
@@ -306,7 +227,11 @@ export default function OpenClaw() {
         if (active.mcpServers) body.mcp_servers=active.mcpServers;
         if (tools)             body.tools=tools;
         if (i>0) setStatus("Ejecutando herramientas…");
-        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+        const res=await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","x-api-key":config.anthropicKey,"anthropic-version":"2023-06-01"},
+          body:JSON.stringify(body)
+        });
         const data=await res.json();
         const toolUse=(data.content||[]).filter(b=>b.type==="tool_use");
         const texts=(data.content||[]).filter(b=>b.type==="text");
@@ -329,7 +254,7 @@ export default function OpenClaw() {
 
   const handleKey = e => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} };
   const msgs = histories[active?.id]||[];
-  const configured = config.nexusKey||config.sheetsKey;
+  const configured = config.anthropicKey||config.nexusKey||config.sheetsKey;
 
   return (
     <>
@@ -423,7 +348,8 @@ export default function OpenClaw() {
 
                 <div style={{padding:"14px 22px",borderTop:"1px solid var(--border)",background:"var(--surface)",flexShrink:0}}>
                   <div style={{display:"flex",gap:10,alignItems:"flex-end",background:"#0C0C18",border:"1px solid var(--border2)",borderRadius:12,padding:"8px 8px 8px 14px"}}>
-                    <textarea rows={1} disabled={loading} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
+                    <textarea ref={taRef} rows={1} disabled={loading} value={input}
+                      onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
                       placeholder={`Escribe a ${active.name}…`}
                       style={{flex:1,background:"none",border:"none",outline:"none",color:"var(--text)",fontSize:14,fontFamily:"'DM Sans',sans-serif",lineHeight:1.6,minHeight:26,maxHeight:120,resize:"none",opacity:loading?.4:1}}/>
                     <button className="send-btn" onClick={send} disabled={!input.trim()||loading}
