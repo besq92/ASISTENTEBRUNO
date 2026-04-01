@@ -210,47 +210,131 @@ export default function OpenClaw() {
     } catch(e) { return { error:e.message }; }
   };
 
-  const send = async () => {
-    if (!input.trim()||loading||!active) return;
-    const userMsg = { role:"user", content:input.trim() };
-    const newHist = [...(histories[active.id]||[]), userMsg];
-    setHistories(p=>({...p,[active.id]:newHist}));
-    setInput(""); setLoading(true); setStatus("Pensando…");
-    try {
-      let msgs=newHist.map(m=>({role:m.role,content:m.content}));
-      let tools=null, sid=OLIVIA_SHEET_ID, sname="BITACORA_PAGOS";
-      if (active.tools==="crm")           tools=CRM_TOOLS;
-      if (active.tools==="sheets_olivia") tools=SHEETS_TOOLS;
-      if (active.tools==="sheets_straty") { tools=SHEETS_TOOLS; sid=STRATY_SHEET_ID; sname="BITACORA_PAGOS_NEGOCIO"; }
-      let finalText="";
-      for (let i=0;i<6;i++) {
-        const body={model:"claude-sonnet-4-20250514",max_tokens:1000,system:active.system,messages:msgs};
-        if (active.mcpServers) body.mcp_servers=active.mcpServers;
-        if (tools)             body.tools=tools;
-        if (i>0) setStatus("Ejecutando herramientas…");
-        const res=await fetch(PROXY_URL, {
-          method:"POST",
-          headers:{"Content-Type":"application/json","x-api-key":config.anthropicKey,"anthropic-version":"2023-06-01"},
-          body:JSON.stringify(body)
-        });
-        const data=await res.json();
-        const toolUse=(data.content||[]).filter(b=>b.type==="tool_use");
-        const texts=(data.content||[]).filter(b=>b.type==="text");
-        if (toolUse.length) {
-          msgs.push({role:"assistant",content:data.content});
-          const results=[];
-          for (const tu of toolUse) {
-            const r=active.tools==="crm"?await callCRM(tu.name,tu.input):await callSheets(tu.name,tu.input,sid,sname);
-            results.push({type:"tool_result",tool_use_id:tu.id,content:JSON.stringify(r)});
-          }
-          msgs.push({role:"user",content:results});
-        } else { finalText=texts.map(b=>b.text).join("")||"Sin respuesta."; break; }
-      }
-      setHistories(p=>({...p,[active.id]:[...newHist,{role:"assistant",content:finalText}]}));
-    } catch(e) {
-      setHistories(p=>({...p,[active.id]:[...(histories[active?.id]||[]),{role:"assistant",content:`⚠️ ${e.message}`}]}));
+    const send = async () => {
+  if (!input.trim() || loading || !active) return;
+
+  // 🔴 Fix: validar que haya API key antes de intentar llamar
+  if (!config.anthropicKey) {
+    setHistories(p => ({
+      ...p,
+      [active.id]: [
+        ...(p[active.id] || []),
+        { role: "assistant", content: "⚠️ Falta la API Key de Anthropic. Configúrala en ⚙ Config." }
+      ]
+    }));
+    return;
+  }
+
+  const userMsg = { role: "user", content: input.trim() };
+  const newHist = [...(histories[active.id] || []), userMsg];
+  setHistories(p => ({ ...p, [active.id]: newHist }));
+  setInput("");
+  setLoading(true);
+  setStatus("Pensando…");
+
+  try {
+    let msgs = newHist.map(m => ({ role: m.role, content: m.content }));
+    let tools = null;
+    let sid = OLIVIA_SHEET_ID;
+    let sname = "BITACORA_PAGOS";
+
+    if (active.tools === "crm")           tools = CRM_TOOLS;
+    if (active.tools === "sheets_olivia") tools = SHEETS_TOOLS;
+    if (active.tools === "sheets_straty") {
+      tools = SHEETS_TOOLS;
+      sid   = STRATY_SHEET_ID;
+      sname = "BITACORA_PAGOS_NEGOCIO";
     }
-    setLoading(false); setStatus("");
+
+    let finalText = "";
+
+    for (let i = 0; i < 6; i++) {
+      // 🔴 Fix 1: model ID correcto
+      const body = {
+        model:      "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
+        system:     active.system,
+        messages:   msgs,
+      };
+
+      // 🔴 Fix 2: eliminado mcp_servers (no es parte de la API REST)
+      // if (active.mcpServers) body.mcp_servers = active.mcpServers;
+
+      if (tools) body.tools = tools;
+
+      if (i > 0) setStatus("Ejecutando herramientas…");
+
+      const res = await fetch(PROXY_URL, {
+        method:  "POST",
+        headers: {
+          "Content-Type":      "application/json",
+          "x-api-key":         config.anthropicKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(body),
+      });
+
+      // 🔴 Fix 3: manejo de errores HTTP (401, 400, 500, etc.)
+      if (!res.ok) {
+        let errMsg = `Error HTTP ${res.status}`;
+        try {
+          const errData = await res.json();
+          errMsg = errData?.error?.message || errData?.message || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
+      const data = await res.json();
+
+      // Protección extra: si la respuesta no tiene content
+      if (!data || !data.content) {
+        throw new Error("La API no devolvió contenido. Respuesta: " + JSON.stringify(data));
+      }
+
+      const toolUse = data.content.filter(b => b.type === "tool_use");
+      const texts   = data.content.filter(b => b.type === "text");
+
+      if (toolUse.length) {
+        msgs.push({ role: "assistant", content: data.content });
+
+        const results = [];
+        for (const tu of toolUse) {
+          const r =
+            active.tools === "crm"
+              ? await callCRM(tu.name, tu.input)
+              : await callSheets(tu.name, tu.input, sid, sname);
+
+          results.push({
+            type:        "tool_result",
+            tool_use_id: tu.id,
+            content:     JSON.stringify(r),
+          });
+        }
+        msgs.push({ role: "user", content: results });
+
+      } else {
+        finalText = texts.map(b => b.text).join("") || "Sin respuesta.";
+        break;
+      }
+    }
+
+    setHistories(p => ({
+      ...p,
+      [active.id]: [...newHist, { role: "assistant", content: finalText }],
+    }));
+
+  } catch (e) {
+    setHistories(p => ({
+      ...p,
+      [active.id]: [
+        ...(histories[active?.id] || []),
+        { role: "assistant", content: `⚠️ ${e.message}` },
+      ],
+    }));
+  }
+
+  setLoading(false);
+  setStatus("");
   };
 
   const handleKey = e => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} };
