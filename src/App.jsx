@@ -35,6 +35,7 @@ const OLIVIA_SHEET_ID = "1Sn1uvZEO6vdgRk79Y0i8th8NQKRddepL1tcVQtBopLY";
 const STRATY_SHEET_ID = "1K8DwyXxY8JkYTPurwGCuiQgLhUDxY1jat4u0mszg-hc";
 const CRM_BASE        = "https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/crm-api";
 const SHEETS_BASE     = "https://sheets.googleapis.com/v4/spreadsheets";
+const PROXY_URL       = "https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/anthropic-proxy";
 
 const AGENTS = [
   {
@@ -122,12 +123,12 @@ function ConfigModal({ config, onSave, onClose }) {
           Configuración de API Keys
         </p>
         <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"#6B6B90", marginBottom:22 }}>
-          Solo se guardan en tu sesión — nunca salen de tu navegador.
+          Se guardan en tu navegador — no tienes que volver a ingresarlas.
         </p>
         {[
-          { label:"API Key · Anthropic (Claude)",              key:"anthropicKey", ph:"sk-ant-...",                  type:"password" },
-          { label:"API Key · NEXXUS CRM",                      key:"nexusKey",     ph:"Tu CRM_API_KEY de Supabase",  type:"password" },
-          { label:"API Key · Google Sheets (Olivia & STRATY)", key:"sheetsKey",    ph:"AIza...",                     type:"password" },
+          { label:"API Key · Anthropic (Claude)",              key:"anthropicKey", ph:"sk-ant-...",                 type:"password" },
+          { label:"API Key · NEXXUS CRM",                      key:"nexusKey",     ph:"Tu CRM_API_KEY de Supabase", type:"password" },
+          { label:"API Key · Google Sheets (Olivia & STRATY)", key:"sheetsKey",    ph:"AIza...",                   type:"password" },
         ].map(({ label, key, ph, type }) => (
           <div key={key} style={{ marginBottom:16 }}>
             <label style={{ display:"block", fontFamily:"'Syne',sans-serif", fontSize:10,
@@ -227,7 +228,7 @@ export default function OpenClaw() {
         if (active.mcpServers) body.mcp_servers=active.mcpServers;
         if (tools)             body.tools=tools;
         if (i>0) setStatus("Ejecutando herramientas…");
-        const res=await fetch("https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/anthropic-proxy",{
+        const res=await fetch(PROXY_URL, {
           method:"POST",
           headers:{"Content-Type":"application/json","x-api-key":config.anthropicKey,"anthropic-version":"2023-06-01"},
           body:JSON.stringify(body)
