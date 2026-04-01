@@ -227,7 +227,7 @@ export default function OpenClaw() {
         if (active.mcpServers) body.mcp_servers=active.mcpServers;
         if (tools)             body.tools=tools;
         if (i>0) setStatus("Ejecutando herramientas…");
-        const res=await fetch("https://api.anthropic.com/v1/messages",{
+        const res=await fetch("https://mahfebuoqcjzdonhlgkv.supabase.co/functions/v1/anthropic-proxy",{
           method:"POST",
           headers:{"Content-Type":"application/json","x-api-key":config.anthropicKey,"anthropic-version":"2023-06-01"},
           body:JSON.stringify(body)
